@@ -1,0 +1,103 @@
+using Snapshot_API.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+
+
+namespace Snapshot_API.Controllers
+{
+    [RoutePrefix("api/fs")]
+    public class FSController : ApiController
+    {
+        [Route("post")]
+        [HttpPost]
+        public string post([FromBody]AddSSFSH SSFSH)
+        {
+            string Results ="";
+            try
+            {
+                Results = DAL.dal_Snapshot.Post(SSFSH);
+                return Results;
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+        [HttpGet]
+        [Route("get")]
+        public IHttpActionResult Get(DateTime DateFrom,DateTime DateTo,String whcode)
+        {
+
+                  
+            try
+            {
+                List<object> model = DAL.dal_Snapshot.Get( DateFrom, DateTo, whcode);
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+        [HttpGet]
+        [Route("headers")]
+        public IHttpActionResult getHeader([FromUri]int year, [FromUri]string whcd)
+        {
+                
+            try
+            {
+                List<object> model = DAL.dal_Snapshot.GetHdr(year, whcd);
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+        [HttpGet]
+        [Route("details")]
+        public IHttpActionResult getDetails([FromUri] int docnum)
+        {
+
+            try
+            {
+                List<object> model = DAL.dal_Snapshot.GetDet(docnum);
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+    
+    }
+}
