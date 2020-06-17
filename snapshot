@@ -1,0 +1,195 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using Snapshot_API.Helpers;
+using Snapshot_API.Models;
+using System.Data;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+using System.Data.SqlClient;
+using System.Data;
+
+namespace Snapshot_API.DAL
+{
+    public class dal_Snapshot
+    {
+        public static List<object> Get(DateTime DateFrom, DateTime DateTo, String whcode)
+        {
+            try
+            {
+                SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                List<object> model = new List<object>();
+                var str = "exec Bookkeeping.dbo.sp_snapFS @startdate, @enddate, @whcode";
+                DataTable dt = tool.sqlDT(str, new SqlParameter("@startdate", DateFrom), new SqlParameter("@enddate", DateTo), new SqlParameter("@whcode", whcode));
+                foreach (var item in dt.Select())
+                {
+                    model.Add(new
+                    {
+                        Desc = Convert.ToString(item["Dscpt"]),
+                        DocEntry = Convert.ToInt32(item["DocEntry"]),
+                        WhsCode = Convert.ToString(item["WhsCode"]),
+                        Year = Convert.ToInt32(item["Yr"]),
+                        Month = Convert.ToInt32(item["Pd"]),
+                        BeginningAmt = Convert.ToDecimal(item["BegAmt"]),
+                        CurrentAmount = Convert.ToDecimal(item["CurrAmt"]),
+                        EndAmount = Convert.ToDecimal(item["EndAmt"]),
+                        TBType = Convert.ToString(item["TbType"]),
+                    });
+                }
+                dt.Dispose();
+                tool.Dispose();
+                return model;
+                
+               
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+        public static List<object> GetHdr(int year, string whcd)
+        {
+            try
+            {
+                SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                List<object> model = new List<object>();
+                var str = "SELECT t0.DocNum,t0.WhsCode,t0.Yr,t0.Pd,t0.Total, "+
+                          "t0.DateCreated,t2.EmpName,t0.CreatedBy, t1.Blk "+
+                          "FROM [Bookkeeping].[dbo].[SSFSH] t0 " +
+                          "INNER JOIN HPCOMMON.dbo.SAPSet t1 ON t0.WhsCode=t1.Code "+
+                          "INNER JOIN HPCOMMON.dbo.SCEmpNew t2 ON t0.CreatedBy=t2.EmpCode "+
+                          "WHERE DateCreated=@DateCreated AND WhsCode=@WhsCode ";
+                DataTable dt = tool.sqlDT(str, new SqlParameter("@WhsCode", whcd), new SqlParameter("@DateCreated", year));
+                foreach (var item in dt.Select())
+                {
+                    model.Add(new
+                    {
+                        DocNum = Convert.ToString(item["DocNum"]),
+                        WhsCode = Convert.ToInt32(item["WhsCode"]),
+                        Yr = Convert.ToString(item["Yr"]),
+                        Pd = Convert.ToInt32(item["Pd"]),
+                        Total = Convert.ToInt32(item["Total"]),
+                        DateCreated = Convert.ToDecimal(item["DateCreated"]),
+                        EmpName = Convert.ToDecimal(item["EmpName"]),
+                        CreatedBy = Convert.ToDecimal(item["CreatedBy"]),
+                        Branch = Convert.ToDecimal(item["Blk"])
+                    });
+                }
+                dt.Dispose();
+                tool.Dispose();
+                return model;
+
+
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+        public static List<object> GetDet(int docnum)
+        {
+            try
+            {
+                SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                List<object> model = new List<object>();
+                var str = "SELECT t2.Dscpt, t0.DocNum,t0.DocEntry,t0.TBType,t0.Amount "+
+                          "FROM Bookkeeping.dbo.SSFS1 t0 "+
+                          "INNER JOIN Bookkeeping.dbo.SSFSH t1 ON t0.DocNum=t1.DocNum "+
+                          "INNER JOIN Bookkeeping.dbo.snap_Templates t2 ON t1.WhsCode= t2.WhsCode "+
+                          "AND t0.DocEntry=t2.DocEntry "+
+                          "t0 WHERE DocNum=@DocNum ";
+                DataTable dt = tool.sqlDT(str, new SqlParameter("@DocNum",docnum));
+                foreach (var item in dt.Select())
+                {
+                    model.Add(new
+                    {
+                        DocNum = Convert.ToInt32(item["DocNum"]),
+                        DocEntry = Convert.ToInt32(item["DocEntry"]),
+                        TBType = Convert.ToString(item["TBType"]),
+                        Amount = Convert.ToDecimal(item["Amount"]),
+                        Dscpt = Convert.ToDecimal(item["Dscpt"])
+                    });
+                }
+                dt.Dispose();
+                tool.Dispose();
+                return model;
+
+
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+        public static string Post(AddSSFSH addSSFSH)
+        {
+            string isSuccess = "";
+            int result = 0;
+            try
+            {
+                DataTable dt = new DataTable();
+                try { 
+                    SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                    
+                    var str = "exec Bookkeeping.dbo.sp_snapAddFS 0,@mode, @WhsCode, @Yr,@Pd,0,'','',0,'' ";
+                    dt = tool.sqlDT(str, new SqlParameter("@mode", "CheckData"), new SqlParameter("@WhsCode", addSSFSH.WhsCode), new SqlParameter("@Yr", addSSFSH.Yr), new SqlParameter("@Pd", addSSFSH.Pd));
+                    tool.Dispose();
+                   }
+                catch(Exception Ex)
+                {
+                    isSuccess = "Error occured in Selecting Data in sp_snapAddFS || " + Ex.Message.ToString();
+                    return isSuccess;
+                }
+                
+                if (dt.Rows.Count > 0) { return "WarehouseCode, Month and Year Already Exist"; }
+                else{
+                    try
+                    { 
+                        var str1 = "exec Bookkeeping.dbo.sp_snapAddFS 0,@mode, @WhsCode, @Yr,@Pd,@Total,@DateCreated,@CreatedBy,0,'' ";
+                        SQLTool tool2 = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                        result = tool2.sqlExecute(str1, new SqlParameter("@mode", "AddHeader"), new SqlParameter("@DocNum", addSSFSH.DocNum), new SqlParameter("@WhsCode", addSSFSH.WhsCode), new SqlParameter("@Yr", addSSFSH.Yr), new SqlParameter("@Pd", addSSFSH.Pd), new SqlParameter("@Total", addSSFSH.Total), new SqlParameter("@DateCreated", addSSFSH.DateCreated), new SqlParameter("@CreatedBy", addSSFSH.CreatedBy));
+                
+                        tool2.Dispose();
+                    }
+                    catch (Exception Ex)
+                    {
+                      isSuccess ="Error occured in Inserting FS Header || " + Ex.Message.ToString();
+                      return isSuccess;
+                    }
+                      
+                        if (addSSFSH.Details != null)
+                        {
+                          try
+                          { 
+                               foreach (var det in addSSFSH.Details)
+                               {
+                                var str2 = "exec Bookkeeping.dbo.sp_snapAddFS @Amount,@mode, '', 0,0,0,'','',@DocEntry,@TBType";
+                                SQLTool tool3 = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                                tool3.sqlExecute(str2, new SqlParameter("@mode", "AddDetail"), new SqlParameter("@DocNum", det.DocNum), new SqlParameter("@DocEntry", det.DocEntry), new SqlParameter("@TBType", det.TBType), new SqlParameter("@Amount", det.Amount));
+                                 tool3.Dispose();
+                                }
+                             }
+                            catch (Exception Ex)
+                            {
+                                isSuccess ="Error occured in Inserting FS details || " + Ex.Message.ToString();
+                                return isSuccess;
+                            }
+                        }
+                        isSuccess = "Successfuly Added Header and details";
+                        return isSuccess;
+                    }
+            }
+            catch (Exception ex)
+            {
+                isSuccess = ex.Message.ToString();
+                return isSuccess;
+            }
+            return isSuccess;
+        }
+
+        
+    }
+}
