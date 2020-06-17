@@ -1,0 +1,50 @@
+using Snapshot_API.Helpers;
+using Snapshot_API.Models;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+
+namespace Snapshot_API.DAL
+{
+    public class dal_Auth
+    {
+        public static User Login(string username, string password)
+        {
+            SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+            var str = "EXEC HPCOMMON.dbo.UserLogin @user,@pass";
+            DataTable dt = tool.sqlDT(str, new SqlParameter("@user", username), new SqlParameter("@pass", password));
+            User model = new User();
+            if (dt.Rows.Count > 0)
+            {
+                model.EmpID = Convert.ToString(dt.Rows[0]["EmpID"]);
+                model.EmpName = Convert.ToString(dt.Rows[0]["EmpName"]);
+                model.FName = Convert.ToString(dt.Rows[0]["FName"]);
+                model.UType = Convert.ToString(dt.Rows[0]["UType"]);
+                model.WhsCode = Convert.ToString(dt.Rows[0]["WhsCode"]);
+                model.Dept = Convert.ToString(dt.Rows[0]["Dept"]);
+                model.DeptCode = Convert.ToInt32(dt.Rows[0]["DeptCode"]);
+                model.SecCode = Convert.ToInt32(dt.Rows[0]["SecCode"]);
+                model.Role = "ADMIN";
+                dt.Dispose();
+                tool.Dispose();
+
+                //tool = new SQLTool(EMS_SVR.Server, EMS_SVR.Database, EMS_SVR.DbUser, EMS_SVR.DbPwd);
+                //str = "SELECT UserRole FROM HPCOMMON.dbo.UserAccess WHERE Active = 'Y' AND ProgramID = @progid AND EmpCode = @empcode";
+                //str = tool.sqlScalar(str, new SqlParameter("@progid", Config.ProgId), new SqlParameter("@empcode", model.EmpID));
+                //if (string.IsNullOrEmpty(str)) throw new ApplicationException("Invalid access. Request access to administrator(s).");
+                //model.Role = str;
+                //tool.Dispose();
+            }
+            else
+            {
+                tool.Dispose();
+                throw new ApplicationException("User not found.");
+            }
+
+            return model;
+        }
+    }
+}
