@@ -1,0 +1,97 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using Snapshot_API.Helpers;
+using Snapshot_API.Models;
+using System.Data;
+
+namespace Snapshot_API.DAL
+{
+    public class dal_Users
+    {
+        public static List<object> Get()
+        {
+            try
+            {
+                SQLTool tool = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                List<object> model = new List<object>();
+                var str = "SELECT t0.EmpCode,t1.EmpName,t0.UType,t0.Approved " +
+                        "FROM dbo.snap_Users t0 " +
+                        "INNER JOIN HPCOMMON.dbo.SCEmpNew t1 ON t1.EmpCode = t0.EmpCode " +
+                        "WHERE t0.Active = 1 " +
+                        " 	AND (t1.DateResigned IS NULL OR t1.DateResigned > GETDATE())";
+                DataTable dt = tool.sqlDT(str);
+                foreach (var item in dt.Select())
+                {
+                    model.Add(new {
+                        EmpCode = Convert.ToString(item["EmpCode"]),
+                        EmpName = Convert.ToString(item["EmpName"]),
+                        Approved = Convert.ToInt32(item["Approved"]) == 1,
+                    });
+                }
+                dt.Dispose();
+                tool.Dispose();
+                return model;
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+
+        public static void Add(User model)
+        {
+            try
+            {
+                
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+
+        public static void Remove(string empcode)
+        {
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+
+        public static string Update(UpdateUser model)
+        {
+            string isSuccess = "Update Successfuly";
+            try
+            {
+                int result = 0;
+                var str1 = "UPDATE [Bookkeeping].[dbo].[snap_Users] SET [Approved]=1, [ApprovedBy]='" + model.UpdatedBy + "'  WHERE [EmpCode]=" + model.EmpID + " ";
+                        SQLTool tool2 = new SQLTool(Config.Server, Config.Database, Config.DbUser, Config.DbPwd);
+                        result = tool2.sqlExecute(str1);                
+                        tool2.Dispose();
+                        return isSuccess;  
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+
+        public static void Approve(string empcode)
+        {
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException(ex.Message);
+            }
+        }
+    }
+}
