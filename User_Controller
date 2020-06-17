@@ -1,0 +1,59 @@
+using Snapshot_API.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Web.Http;
+
+namespace Snapshot_API.Controllers
+{
+    //[Authorize]
+    [RoutePrefix("api/users")]
+    public class UsersController : ApiController
+    {
+        [HttpGet]
+        [Route("get")]
+        public IHttpActionResult Get()
+        {
+            try
+            {
+                List<object> model = DAL.dal_Users.Get();
+                return Ok(model);
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+        [Route("UpdateUser")]
+        [HttpPut]
+        public string UpdateUser([FromBody]UpdateUser User)
+        {
+            string Results = "";
+            try{
+            
+              Results=   DAL.dal_Users.Update(User);
+              return Results;
+            }
+            catch (Exception ex)
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent(ex.Message, System.Text.Encoding.UTF8, "text/plain"),
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = ex.Message
+                };
+                throw new HttpResponseException(response);
+            }
+        }
+        
+    }
+
+}
